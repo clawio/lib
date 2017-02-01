@@ -2,13 +2,13 @@ package fileconfigurationsource
 
 import (
 	"encoding/json"
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"io/ioutil"
 )
 
 type configurationSource struct {
 	filename      string
-	configuration root.Configuration
+	configuration lib.Configuration
 }
 
 type configuration struct {
@@ -89,12 +89,12 @@ type configuration struct {
 	RemoteOCWebServiceMaxUploadFileSize int64  `json:"remote_oc_web_service_max_upload_file_size"`
 }
 
-func New(filename string) (root.ConfigurationSource, error) {
+func New(filename string) (lib.ConfigurationSource, error) {
 	configurationSource := &configurationSource{filename: filename}
 	return configurationSource, nil
 }
 
-func (cs *configurationSource) LoadConfiguration() (root.Configuration, error) {
+func (cs *configurationSource) LoadConfiguration() (lib.Configuration, error) {
 	configuration := &configuration{}
 	bytes, err := ioutil.ReadFile(cs.filename)
 	if err != nil {

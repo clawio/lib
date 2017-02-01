@@ -6,7 +6,7 @@ import (
 
 import (
 	"crypto/tls"
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"github.com/go-kit/kit/log/levels"
 	"gopkg.in/ldap.v2"
 )
@@ -27,7 +27,7 @@ func New(logger levels.Levels,
 	hostname string,
 	port int,
 	baseDN string,
-	filter string) (root.UserDriver, error) {
+	filter string) (lib.UserDriver, error) {
 
 	logger.Info().Log("msg", "ldap configuration", "hostname", hostname, "port", port, "bindusername", bindUsername, "basedn", baseDN, "filter", filter)
 	return &driver{
@@ -41,7 +41,7 @@ func New(logger levels.Levels,
 	}, nil
 }
 
-func (c *driver) GetByCredentials(username, password string) (root.User, error) {
+func (c *driver) GetByCredentials(username, password string) (lib.User, error) {
 	l, err := ldap.DialTLS("tcp", fmt.Sprintf("%s:%d", c.hostname, c.port), &tls.Config{InsecureSkipVerify: true})
 	if err != nil {
 		c.logger.Error().Log("error", err)
@@ -123,8 +123,8 @@ type userNotFoundError string
 func (e userNotFoundError) Error() string {
 	return string(e)
 }
-func (e userNotFoundError) Code() root.Code {
-	return root.Code(root.CodeUserNotFound)
+func (e userNotFoundError) Code() lib.Code {
+	return lib.Code(lib.CodeUserNotFound)
 }
 func (e userNotFoundError) Message() string {
 	return string(e)

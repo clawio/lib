@@ -4,25 +4,25 @@ import (
 	"net/http"
 
 	"encoding/json"
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"github.com/go-kit/kit/log/levels"
 	"path/filepath"
 )
 
 type service struct {
-	cm             root.ContextManager
+	cm             lib.ContextManager
 	logger         levels.Levels
-	metaDataDriver root.MetaDataDriver
-	am             root.AuthenticationMiddleware
-	wec            root.WebErrorConverter
+	metaDataDriver lib.MetaDataDriver
+	am             lib.AuthenticationMiddleware
+	wec            lib.WebErrorConverter
 }
 
 func New(
-	cm root.ContextManager,
+	cm lib.ContextManager,
 	logger levels.Levels,
-	metaDataDriver root.MetaDataDriver,
-	am root.AuthenticationMiddleware,
-	wec root.WebErrorConverter) root.WebService {
+	metaDataDriver lib.MetaDataDriver,
+	am lib.AuthenticationMiddleware,
+	wec lib.WebErrorConverter) lib.WebService {
 	return &service{
 		cm:             cm,
 		logger:         logger,
@@ -94,8 +94,8 @@ func (s *service) examineEndpoint(w http.ResponseWriter, r *http.Request) {
 
 func (s *service) handleExamineEndpointError(err error, w http.ResponseWriter, r *http.Request) {
 	logger := s.cm.MustGetLog(r.Context())
-	if codeErr, ok := err.(root.Error); ok {
-		if codeErr.Code() == root.CodeNotFound {
+	if codeErr, ok := err.(lib.Error); ok {
+		if codeErr.Code() == lib.CodeNotFound {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -148,12 +148,12 @@ func (s *service) listFolderEndpoint(w http.ResponseWriter, r *http.Request) {
 func (s *service) handleListFolderEndpointError(err error, w http.ResponseWriter, r *http.Request) {
 	logger := s.cm.MustGetLog(r.Context())
 	logger.Error().Log("error", err)
-	if codeErr, ok := err.(root.Error); ok {
-		if codeErr.Code() == root.CodeNotFound {
+	if codeErr, ok := err.(lib.Error); ok {
+		if codeErr.Code() == lib.CodeNotFound {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		if codeErr.Code() == root.CodeBadInputData {
+		if codeErr.Code() == lib.CodeBadInputData {
 			jsonErr, err := s.wec.ErrorToJSON(codeErr)
 			if err != nil {
 				s.logger.Error().Log("error", err)
@@ -194,7 +194,7 @@ func (s *service) moveEndpoint(w http.ResponseWriter, r *http.Request) {
 	sourcePath := filepath.Clean("/" + req.Source)
 	targetPath := filepath.Clean("/" + req.Target)
 	if sourcePath == "/" || targetPath == "/" {
-		logger.Warn().Log("msg", "root can not be moved")
+		logger.Warn().Log("msg", "lib can not be moved")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -210,12 +210,12 @@ func (s *service) moveEndpoint(w http.ResponseWriter, r *http.Request) {
 func (s *service) handleMoveEndpointError(err error, w http.ResponseWriter, r *http.Request) {
 	logger := s.cm.MustGetLog(r.Context())
 	logger.Error().Log("error", err)
-	if codeErr, ok := err.(root.Error); ok {
-		if codeErr.Code() == root.CodeNotFound {
+	if codeErr, ok := err.(lib.Error); ok {
+		if codeErr.Code() == lib.CodeNotFound {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		if codeErr.Code() == root.CodeBadInputData {
+		if codeErr.Code() == lib.CodeBadInputData {
 			jsonErr, err := s.wec.ErrorToJSON(codeErr)
 			if err != nil {
 				s.logger.Error().Log("error", err)
@@ -255,7 +255,7 @@ func (s *service) deleteEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	path := filepath.Clean("/" + req.Path)
 	if path == "/" {
-		logger.Warn().Log("msg", "root can not be deleted")
+		logger.Warn().Log("msg", "lib can not be deleted")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -304,12 +304,12 @@ func (s *service) makeFolderEndpoint(w http.ResponseWriter, r *http.Request) {
 
 func (s *service) handleMakeFolderEndpointError(err error, w http.ResponseWriter, r *http.Request) {
 	logger := s.cm.MustGetLog(r.Context())
-	if codeErr, ok := err.(root.Error); ok {
-		if codeErr.Code() == root.CodeNotFound {
+	if codeErr, ok := err.(lib.Error); ok {
+		if codeErr.Code() == lib.CodeNotFound {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		if codeErr.Code() == root.CodeBadInputData {
+		if codeErr.Code() == lib.CodeBadInputData {
 			jsonErr, err := s.wec.ErrorToJSON(codeErr)
 			if err != nil {
 				s.logger.Error().Log("error", err)
@@ -321,7 +321,7 @@ func (s *service) handleMakeFolderEndpointError(err error, w http.ResponseWriter
 			w.Write(jsonErr)
 			return
 		}
-		if codeErr.Code() == root.CodeAlreadyExist {
+		if codeErr.Code() == lib.CodeAlreadyExist {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
@@ -336,14 +336,14 @@ type badRequestError string
 func (e badRequestError) Error() string {
 	return string(e)
 }
-func (e badRequestError) Code() root.Code {
-	return root.Code(root.CodeBadInputData)
+func (e badRequestError) Code() lib.Code {
+	return lib.Code(lib.CodeBadInputData)
 }
 func (e badRequestError) Message() string {
 	return string(e)
 }
 
-func fileInfoToFileInfoResponse(fileInfo root.FileInfo) *fileInfoResponse {
+func fileInfoToFileInfoResponse(fileInfo lib.FileInfo) *fileInfoResponse {
 	return &fileInfoResponse{
 		Path:            fileInfo.Path(),
 		Folder:          fileInfo.Folder(),

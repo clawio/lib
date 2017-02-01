@@ -3,23 +3,23 @@ package jwttokendriver
 import (
 	"time"
 
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-kit/kit/log/levels"
 )
 
 type authenticator struct {
 	key    string
-	cm     root.ContextManager
+	cm     lib.ContextManager
 	logger levels.Levels
 }
 
-func New(key string, cm root.ContextManager, logger levels.Levels) root.TokenDriver {
+func New(key string, cm lib.ContextManager, logger levels.Levels) lib.TokenDriver {
 	logger = logger.With("pkg", "jwttokendriver")
 	return &authenticator{key: key, cm: cm, logger: logger}
 }
 
-func (a *authenticator) CreateToken(user root.User) (string, error) {
+func (a *authenticator) CreateToken(user lib.User) (string, error) {
 	if user == nil {
 		return "", badUserError("user is <nil>") }
 	token := jwt.New(jwt.GetSigningMethod("HS256"))
@@ -31,7 +31,7 @@ func (a *authenticator) CreateToken(user root.User) (string, error) {
 	return token.SignedString([]byte(a.key))
 }
 
-func (a *authenticator) UserFromToken(token string) (root.User, error) {
+func (a *authenticator) UserFromToken(token string) (lib.User, error) {
 	rawToken, err := a.parseToken(token)
 	if err != nil {
 		a.logger.Error().Log("error", err)
@@ -40,7 +40,7 @@ func (a *authenticator) UserFromToken(token string) (root.User, error) {
 	return a.getUserFromRawToken(rawToken)
 }
 
-func (a *authenticator) getUserFromRawToken(rawToken *jwt.Token) (root.User, error) {
+func (a *authenticator) getUserFromRawToken(rawToken *jwt.Token) (lib.User, error) {
 	claims := rawToken.Claims.(jwt.MapClaims)
 	username, ok := claims["username"].(string)
 	if !ok {
@@ -81,8 +81,8 @@ type badUserError string
 func (e badUserError) Error() string {
 	return string(e)
 }
-func (e badUserError) Code() root.Code {
-	return root.Code(root.CodeBadAuthenticationData)
+func (e badUserError) Code() lib.Code {
+	return lib.Code(lib.CodeBadAuthenticationData)
 }
 func (e badUserError) Message() string {
 	return string(e)
@@ -93,8 +93,8 @@ type invalidTokenError string
 func (e invalidTokenError) Error() string {
 	return string(e)
 }
-func (e invalidTokenError) Code() root.Code {
-	return root.Code(root.CodeBadAuthenticationData)
+func (e invalidTokenError) Code() lib.Code {
+	return lib.Code(lib.CodeBadAuthenticationData)
 }
 func (e invalidTokenError) Message() string {
 	return string(e)

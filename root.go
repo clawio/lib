@@ -1,4 +1,4 @@
-package root
+package lib
 
 import (
 	"context"
@@ -34,7 +34,7 @@ const (
 	// is in a partial state, like an owncloud chunk upload where the upload of a chunk
 	// does not complete the upload.
 	CodeUploadIsPartial
-	// CodeForbidden is used when something is forbidden, like uploading to root
+	// CodeForbidden is used when something is forbidden, like uploading to lib
 	CodeForbidden
 )
 

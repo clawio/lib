@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"github.com/go-kit/kit/log/levels"
 	"github.com/gorilla/mux"
 	"io"
@@ -19,25 +19,25 @@ import (
 )
 
 type service struct {
-	cm                       root.ContextManager
+	cm                       lib.ContextManager
 	logger                   levels.Levels
-	dataWebServiceClient     root.DataWebServiceClient
-	metaDataWebServiceClient root.MetaDataWebServiceClient
-	bam                      root.BasicAuthMiddleware
-	wec                      root.WebErrorConverter
-	mg                       root.MimeGuesser
+	dataWebServiceClient     lib.DataWebServiceClient
+	metaDataWebServiceClient lib.MetaDataWebServiceClient
+	bam                      lib.BasicAuthMiddleware
+	wec                      lib.WebErrorConverter
+	mg                       lib.MimeGuesser
 	uploadMaxFileSize        int64
 }
 
 func New(
-	cm root.ContextManager,
+	cm lib.ContextManager,
 	logger levels.Levels,
-	dataWebServiceClient root.DataWebServiceClient,
-	metaDataWebServiceClient root.MetaDataWebServiceClient,
-	bam root.BasicAuthMiddleware,
-	wec root.WebErrorConverter,
-	mg root.MimeGuesser,
-	uploadMaxFileSize int64) root.WebService {
+	dataWebServiceClient lib.DataWebServiceClient,
+	metaDataWebServiceClient lib.MetaDataWebServiceClient,
+	bam lib.BasicAuthMiddleware,
+	wec lib.WebErrorConverter,
+	mg lib.MimeGuesser,
+	uploadMaxFileSize int64) lib.WebService {
 	return &service{
 		cm:                       cm,
 		logger:                   logger,
@@ -686,7 +686,7 @@ func (s *service) propfindEndpoint(w http.ResponseWriter, r *http.Request) {
 		children = true
 	}
 
-	var fileInfos []root.FileInfo
+	var fileInfos []lib.FileInfo
 	fileInfo, err := s.metaDataWebServiceClient.Examine(r.Context(), user, path)
 	if err != nil {
 		s.handlePropfindEndpointError(err, w, r)
@@ -799,11 +799,11 @@ func (s *service) requestHasContentRange(r *http.Request) bool {
 }
 
 func (s *service) isNotFoundError(err error) bool {
-	codeErr, ok := err.(root.Error)
+	codeErr, ok := err.(lib.Error)
 	if !ok {
 		return false
 	}
-	if codeErr.Code() == root.CodeNotFound {
+	if codeErr.Code() == lib.CodeNotFound {
 		return true
 	}
 	return false
@@ -862,8 +862,8 @@ func getChunkBLOBInfo(path string) (*chunkBLOBInfo, error) {
 
 func (s *service) handleGetEndpointError(err error, w http.ResponseWriter, r *http.Request) {
 	logger := s.cm.MustGetLog(r.Context())
-	if codeErr, ok := err.(root.Error); ok {
-		if codeErr.Code() == root.CodeNotFound {
+	if codeErr, ok := err.(lib.Error); ok {
+		if codeErr.Code() == lib.CodeNotFound {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -875,8 +875,8 @@ func (s *service) handleGetEndpointError(err error, w http.ResponseWriter, r *ht
 
 func (s *service) handleHeadEndpointError(err error, w http.ResponseWriter, r *http.Request) {
 	logger := s.cm.MustGetLog(r.Context())
-	if codeErr, ok := err.(root.Error); ok {
-		if codeErr.Code() == root.CodeNotFound {
+	if codeErr, ok := err.(lib.Error); ok {
+		if codeErr.Code() == lib.CodeNotFound {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -909,8 +909,8 @@ func (s *service) handleMoveEndpointError(err error, w http.ResponseWriter, r *h
 
 func (s *service) handleOptionsEndpointError(err error, w http.ResponseWriter, r *http.Request) {
 	logger := s.cm.MustGetLog(r.Context())
-	if codeErr, ok := err.(root.Error); ok {
-		if codeErr.Code() == root.CodeNotFound {
+	if codeErr, ok := err.(lib.Error); ok {
+		if codeErr.Code() == lib.CodeNotFound {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -930,25 +930,25 @@ func (s *service) handlePutEndpointError(err error, w http.ResponseWriter, r *ht
 		return
 	}
 
-	if codeErr, ok := err.(root.Error); ok {
-		if codeErr.Code() == root.CodeNotFound {
+	if codeErr, ok := err.(lib.Error); ok {
+		if codeErr.Code() == lib.CodeNotFound {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		if codeErr.Code() == root.CodeBadChecksum {
+		if codeErr.Code() == lib.CodeBadChecksum {
 			logger.Error().Log("error", "checksum mismatch")
 			w.WriteHeader(http.StatusPreconditionFailed)
 			return
 		}
-		if codeErr.Code() == root.CodeBadChecksum {
+		if codeErr.Code() == lib.CodeBadChecksum {
 			w.WriteHeader(http.StatusPreconditionFailed)
 			return
 		}
-		if codeErr.Code() == root.CodeUploadIsPartial {
+		if codeErr.Code() == lib.CodeUploadIsPartial {
 			w.WriteHeader(http.StatusPartialContent)
 			return
 		}
-		if codeErr.Code() == root.CodeForbidden {
+		if codeErr.Code() == lib.CodeForbidden {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
@@ -963,8 +963,8 @@ func (s *service) handlePutChunkedEndpointError(err error, w http.ResponseWriter
 	logger := s.cm.MustGetLog(r.Context())
 	logger.Error().Log("error", err)
 
-	if codeErr, ok := err.(root.Error); ok {
-		if codeErr.Code() == root.CodeUploadIsPartial {
+	if codeErr, ok := err.(lib.Error); ok {
+		if codeErr.Code() == lib.CodeUploadIsPartial {
 			w.WriteHeader(http.StatusCreated)
 			return
 		}
@@ -976,8 +976,8 @@ func (s *service) handlePutChunkedEndpointError(err error, w http.ResponseWriter
 func (s *service) handlePropfindEndpointError(err error, w http.ResponseWriter, r *http.Request) {
 	logger := s.cm.MustGetLog(r.Context())
 	logger.Error().Log("error", err)
-	if codeErr, ok := err.(root.Error); ok {
-		if codeErr.Code() == root.CodeNotFound {
+	if codeErr, ok := err.(lib.Error); ok {
+		if codeErr.Code() == lib.CodeNotFound {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -987,7 +987,7 @@ func (s *service) handlePropfindEndpointError(err error, w http.ResponseWriter, 
 	return
 }
 
-func (s *service) fileInfosToXML(ctx context.Context, fileInfos []root.FileInfo) (string, error) {
+func (s *service) fileInfosToXML(ctx context.Context, fileInfos []lib.FileInfo) (string, error) {
 	responses := []*responseXML{}
 	for _, fileInfo := range fileInfos {
 		res, err := s.fileInfoToPropResponse(ctx, fileInfo)
@@ -1007,7 +1007,7 @@ func (s *service) fileInfosToXML(ctx context.Context, fileInfos []root.FileInfo)
 	return msg, nil
 }
 
-func (s *service) fileInfoToPropResponse(ctx context.Context, fileInfo root.FileInfo) (*responseXML, error) {
+func (s *service) fileInfoToPropResponse(ctx context.Context, fileInfo lib.FileInfo) (*responseXML, error) {
 	logger := s.cm.MustGetLog(ctx)
 	extraAttributes := fileInfo.ExtraAttributes()
 	if extraAttributes == nil {
@@ -1168,8 +1168,8 @@ type metaDataWebServiceClientNotSupportedError string
 func (e metaDataWebServiceClientNotSupportedError) Error() string {
 	return string(e)
 }
-func (e metaDataWebServiceClientNotSupportedError) Code() root.Code {
-	return root.Code(root.CodeInternal)
+func (e metaDataWebServiceClientNotSupportedError) Code() lib.Code {
+	return lib.Code(lib.CodeInternal)
 }
 func (e metaDataWebServiceClientNotSupportedError) Message() string {
 	return string(e)

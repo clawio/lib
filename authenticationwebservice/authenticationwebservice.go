@@ -4,28 +4,28 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"github.com/go-kit/kit/log/levels"
 )
 
 type service struct {
-	cm             root.ContextManager
+	cm             lib.ContextManager
 	logger         levels.Levels
-	userDriver     root.UserDriver
-	tokenDriver    root.TokenDriver
-	am             root.AuthenticationMiddleware
-	wec            root.WebErrorConverter
+	userDriver     lib.UserDriver
+	tokenDriver    lib.TokenDriver
+	am             lib.AuthenticationMiddleware
+	wec            lib.WebErrorConverter
 	methodAgnostic bool
 }
 
 func New(
-	cm root.ContextManager,
+	cm lib.ContextManager,
 	logger levels.Levels,
-	userDriver root.UserDriver,
-	tokenDriver root.TokenDriver,
-	am root.AuthenticationMiddleware,
-	wec root.WebErrorConverter,
-	methodAgnostic bool) root.WebService {
+	userDriver lib.UserDriver,
+	tokenDriver lib.TokenDriver,
+	am lib.AuthenticationMiddleware,
+	wec lib.WebErrorConverter,
+	methodAgnostic bool) lib.WebService {
 	return &service{
 		cm:             cm,
 		logger:         logger,
@@ -149,8 +149,8 @@ type badRequestError string
 func (e badRequestError) Error() string {
 	return string(e)
 }
-func (e badRequestError) Code() root.Code {
-	return root.Code(root.CodeBadInputData)
+func (e badRequestError) Code() lib.Code {
+	return lib.Code(lib.CodeBadInputData)
 }
 func (e badRequestError) Message() string {
 	return string(e)

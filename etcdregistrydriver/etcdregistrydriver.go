@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"github.com/coreos/etcd/client"
 	"github.com/go-kit/kit/log/levels"
 	"strings"
@@ -25,7 +25,7 @@ type driver struct {
 	client   client.Client
 }
 
-func New(logger levels.Levels, urlList, key, username, password string) (root.RegistryDriver, error) {
+func New(logger levels.Levels, urlList, key, username, password string) (lib.RegistryDriver, error) {
 	urls := strings.Split(urlList, ",")
 	etcdConfig := client.Config{
 		Endpoints:               urls,
@@ -53,7 +53,7 @@ func New(logger levels.Levels, urlList, key, username, password string) (root.Re
 	}
 	return r, nil
 }
-func (d *driver) Register(ctx context.Context, node root.RegistryNode) error {
+func (d *driver) Register(ctx context.Context, node lib.RegistryNode) error {
 	kapi := client.NewKeysAPI(d.client)
 	key := fmt.Sprintf("%s/%s/%s", d.key, node.Rol(), node.ID())
 	n := &xnode{
@@ -76,7 +76,7 @@ func (d *driver) Register(ctx context.Context, node root.RegistryNode) error {
 	return nil
 }
 
-func (d *driver) GetNodesForRol(ctx context.Context, rol string) ([]root.RegistryNode, error) {
+func (d *driver) GetNodesForRol(ctx context.Context, rol string) ([]lib.RegistryNode, error) {
 	kapi := client.NewKeysAPI(d.client)
 	key := fmt.Sprintf("%s/%s", d.key, rol)
 	resp, err := kapi.Get(ctx, key, nil)
@@ -85,7 +85,7 @@ func (d *driver) GetNodesForRol(ctx context.Context, rol string) ([]root.Registr
 	}
 
 	stringNodes := []string{}
-	nodes := []root.RegistryNode{}
+	nodes := []lib.RegistryNode{}
 	for _, n := range resp.Node.Nodes {
 		rn := &xnode{}
 		if err := json.Unmarshal([]byte(n.Value), rn); err == nil {

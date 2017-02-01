@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"github.com/go-kit/kit/log/levels"
 	"github.com/patrickmn/go-cache"
 	"io"
@@ -16,26 +16,26 @@ import (
 
 type webServiceClient struct {
 	logger         levels.Levels
-	cm             root.ContextManager
+	cm             lib.ContextManager
 	client         *http.Client
-	registryDriver root.RegistryDriver
+	registryDriver lib.RegistryDriver
 	cache          *cache.Cache
 }
 
 // New returns an implementation of DataDriver.
-func New(logger levels.Levels, cm root.ContextManager, registryDriver root.RegistryDriver) root.DataWebServiceClient {
+func New(logger levels.Levels, cm lib.ContextManager, registryDriver lib.RegistryDriver) lib.DataWebServiceClient {
 	cache := cache.New(time.Second*10, time.Second*10)
 	rand.Seed(time.Now().Unix()) // initialize global pseudorandom generator
 	return &webServiceClient{logger: logger, cm: cm, client: http.DefaultClient, registryDriver: registryDriver, cache: cache}
 }
 
 func (c *webServiceClient) getDataURL(ctx context.Context) (string, error) {
-	var nodes []root.RegistryNode
+	var nodes []lib.RegistryNode
 
 	v, ok := c.cache.Get("nodes")
 	if ok {
 		c.logger.Info().Log("msg", "nodes obtained from cache")
-		nodes = v.([]root.RegistryNode)
+		nodes = v.([]lib.RegistryNode)
 	} else {
 		ns, err := c.registryDriver.GetNodesForRol(ctx, "data-node")
 		if err != nil {
@@ -55,7 +55,7 @@ func (c *webServiceClient) getDataURL(ctx context.Context) (string, error) {
 	chosenURL := chosenNode.URL() + "/data"
 	return chosenURL, nil
 }
-func (c *webServiceClient) UploadFile(ctx context.Context, user root.User, path string, r io.ReadCloser, clientChecksum string) error {
+func (c *webServiceClient) UploadFile(ctx context.Context, user lib.User, path string, r io.ReadCloser, clientChecksum string) error {
 	traceID := c.cm.MustGetTraceID(ctx)
 	token := c.cm.MustGetAccessToken(ctx)
 
@@ -111,7 +111,7 @@ func (c *webServiceClient) UploadFile(ctx context.Context, user root.User, path 
 	return internalError(fmt.Sprintf("http status code: %d", res.StatusCode))
 }
 
-func (c *webServiceClient) DownloadFile(ctx context.Context, user root.User, path string) (io.ReadCloser, error) {
+func (c *webServiceClient) DownloadFile(ctx context.Context, user lib.User, path string) (io.ReadCloser, error) {
 	traceID := c.cm.MustGetTraceID(ctx)
 	token := c.cm.MustGetAccessToken(ctx)
 
@@ -158,8 +158,8 @@ type internalError string
 func (e internalError) Error() string {
 	return string(e)
 }
-func (e internalError) Code() root.Code {
-	return root.Code(root.CodeInternal)
+func (e internalError) Code() lib.Code {
+	return lib.Code(lib.CodeInternal)
 }
 func (e internalError) Message() string {
 	return string(e)
@@ -170,8 +170,8 @@ type checksumError string
 func (e checksumError) Error() string {
 	return string(e)
 }
-func (e checksumError) Code() root.Code {
-	return root.Code(root.CodeBadChecksum)
+func (e checksumError) Code() lib.Code {
+	return lib.Code(lib.CodeBadChecksum)
 }
 func (e checksumError) Message() string {
 	return string(e)
@@ -182,8 +182,8 @@ type notFoundError string
 func (e notFoundError) Error() string {
 	return string(e)
 }
-func (e notFoundError) Code() root.Code {
-	return root.Code(root.CodeNotFound)
+func (e notFoundError) Code() lib.Code {
+	return lib.Code(lib.CodeNotFound)
 }
 func (e notFoundError) Message() string {
 	return string(e)
@@ -194,8 +194,8 @@ type isFolderError string
 func (e isFolderError) Error() string {
 	return string(e)
 }
-func (e isFolderError) Code() root.Code {
-	return root.Code(root.CodeBadInputData)
+func (e isFolderError) Code() lib.Code {
+	return lib.Code(lib.CodeBadInputData)
 }
 func (e isFolderError) Message() string {
 	return string(e)
@@ -206,8 +206,8 @@ type tooBigError string
 func (e tooBigError) Error() string {
 	return string(e)
 }
-func (e tooBigError) Code() root.Code {
-	return root.Code(root.CodeTooBig)
+func (e tooBigError) Code() lib.Code {
+	return lib.Code(lib.CodeTooBig)
 }
 func (e tooBigError) Message() string {
 	return string(e)
@@ -218,8 +218,8 @@ type forbiddenError string
 func (e forbiddenError) Error() string {
 	return string(e)
 }
-func (e forbiddenError) Code() root.Code {
-	return root.Code(root.CodeForbidden)
+func (e forbiddenError) Code() lib.Code {
+	return lib.Code(lib.CodeForbidden)
 }
 func (e forbiddenError) Message() string {
 	return string(e)
@@ -230,8 +230,8 @@ type badInputDataError string
 func (e badInputDataError) Error() string {
 	return string(e)
 }
-func (e badInputDataError) Code() root.Code {
-	return root.Code(root.CodeBadInputData)
+func (e badInputDataError) Code() lib.Code {
+	return lib.Code(lib.CodeBadInputData)
 }
 func (e badInputDataError) Message() string {
 	return string(e)
@@ -242,8 +242,8 @@ type partialUploadError string
 func (e partialUploadError) Error() string {
 	return string(e)
 }
-func (e partialUploadError) Code() root.Code {
-	return root.Code(root.CodeUploadIsPartial)
+func (e partialUploadError) Code() lib.Code {
+	return lib.Code(lib.CodeUploadIsPartial)
 }
 func (e partialUploadError) Message() string {
 	return string(e)

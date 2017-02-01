@@ -1,18 +1,18 @@
 package basicauthmiddleware
 
 import (
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"net/http"
 )
 
 type middleware struct {
 	cookieName  string
-	cm          root.ContextManager
-	userDriver  root.UserDriver
-	tokenDriver root.TokenDriver
+	cm          lib.ContextManager
+	userDriver  lib.UserDriver
+	tokenDriver lib.TokenDriver
 }
 
-func New(cm root.ContextManager, userDriver root.UserDriver, tokenDriver root.TokenDriver, cookieName string) root.BasicAuthMiddleware {
+func New(cm lib.ContextManager, userDriver lib.UserDriver, tokenDriver lib.TokenDriver, cookieName string) lib.BasicAuthMiddleware {
 	return &middleware{cm: cm, userDriver: userDriver, tokenDriver: tokenDriver, cookieName: cookieName}
 }
 

@@ -3,7 +3,7 @@ package proxieddatawebservice
 import (
 	"context"
 	"fmt"
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"github.com/go-kit/kit/log/levels"
 	"github.com/patrickmn/go-cache"
 	"math/rand"
@@ -15,11 +15,11 @@ import (
 
 type service struct {
 	logger         levels.Levels
-	registryDriver root.RegistryDriver
+	registryDriver lib.RegistryDriver
 	cache          *cache.Cache
 }
 
-func New(logger levels.Levels, registryDriver root.RegistryDriver) (root.WebService, error) {
+func New(logger levels.Levels, registryDriver lib.RegistryDriver) (lib.WebService, error) {
 	cache := cache.New(time.Second * 10, time.Second * 10)
 	return &service{
 		logger:         logger,

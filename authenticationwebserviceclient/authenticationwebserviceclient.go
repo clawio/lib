@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"github.com/go-kit/kit/log/levels"
 	"github.com/patrickmn/go-cache"
 	"io/ioutil"
@@ -16,25 +16,25 @@ import (
 
 type webServiceClient struct {
 	logger         levels.Levels
-	cm             root.ContextManager
+	cm             lib.ContextManager
 	client         *http.Client
-	registryDriver root.RegistryDriver
+	registryDriver lib.RegistryDriver
 	cache          *cache.Cache
 }
 
 // New returns an implementation of DataDriver.
-func New(logger levels.Levels, cm root.ContextManager, registryDriver root.RegistryDriver) root.AuthenticationWebServiceClient {
+func New(logger levels.Levels, cm lib.ContextManager, registryDriver lib.RegistryDriver) lib.AuthenticationWebServiceClient {
 	cache := cache.New(time.Second*10, time.Second*10)
 	rand.Seed(time.Now().Unix()) // initialize global pseudo-random generator
 	return &webServiceClient{logger: logger, cm: cm, client: http.DefaultClient, registryDriver: registryDriver, cache: cache}
 }
 
 func (c *webServiceClient) getAuthenticationURL(ctx context.Context) (string, error) {
-	var nodes []root.RegistryNode
+	var nodes []lib.RegistryNode
 	v, ok := c.cache.Get("nodes")
 	if ok {
 		c.logger.Info().Log("msg", "nodes obtained from cache")
-		nodes = v.([]root.RegistryNode)
+		nodes = v.([]lib.RegistryNode)
 	} else {
 		ns, err := c.registryDriver.GetNodesForRol(ctx, "authentication-node")
 		if err != nil {
@@ -152,8 +152,8 @@ type internalError string
 func (e internalError) Error() string {
 	return string(e)
 }
-func (e internalError) Code() root.Code {
-	return root.Code(root.CodeInternal)
+func (e internalError) Code() lib.Code {
+	return lib.Code(lib.CodeInternal)
 }
 func (e internalError) Message() string {
 	return string(e)
@@ -164,8 +164,8 @@ type badInputDataError string
 func (e badInputDataError) Error() string {
 	return string(e)
 }
-func (e badInputDataError) Code() root.Code {
-	return root.Code(root.CodeBadInputData)
+func (e badInputDataError) Code() lib.Code {
+	return lib.Code(lib.CodeBadInputData)
 }
 func (e badInputDataError) Message() string {
 	return string(e)
@@ -176,8 +176,8 @@ type unauthorizedError string
 func (e unauthorizedError) Error() string {
 	return string(e)
 }
-func (e unauthorizedError) Code() root.Code {
-	return root.Code(root.CodeUnauthorized)
+func (e unauthorizedError) Code() lib.Code {
+	return lib.Code(lib.CodeUnauthorized)
 }
 func (e unauthorizedError) Message() string {
 	return string(e)

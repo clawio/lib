@@ -1,17 +1,17 @@
 package authenticationmiddleware
 
 import (
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"net/http"
 	"strings"
 )
 
 type middleware struct {
-	cm          root.ContextManager
-	tokenDriver root.TokenDriver
+	cm          lib.ContextManager
+	tokenDriver lib.TokenDriver
 }
 
-func New(cm root.ContextManager, tokenDriver root.TokenDriver) root.AuthenticationMiddleware {
+func New(cm lib.ContextManager, tokenDriver lib.TokenDriver) lib.AuthenticationMiddleware {
 	return &middleware{cm: cm, tokenDriver: tokenDriver}
 }
 

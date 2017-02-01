@@ -5,7 +5,7 @@ import (
 
 	"encoding/json"
 	"fmt"
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"github.com/go-kit/kit/log/levels"
 	"golang.org/x/net/context"
 	"io"
@@ -13,21 +13,21 @@ import (
 )
 
 type service struct {
-	cm                root.ContextManager
+	cm                lib.ContextManager
 	logger            levels.Levels
-	dataDriver        root.DataDriver
-	am                root.AuthenticationMiddleware
-	wec               root.WebErrorConverter
+	dataDriver        lib.DataDriver
+	am                lib.AuthenticationMiddleware
+	wec               lib.WebErrorConverter
 	uploadMaxFileSize int64
 }
 
 func New(
-	cm root.ContextManager,
+	cm lib.ContextManager,
 	logger levels.Levels,
-	dataDriver root.DataDriver,
-	am root.AuthenticationMiddleware,
-	wec root.WebErrorConverter,
-	uploadMaxFileSize int64) root.WebService {
+	dataDriver lib.DataDriver,
+	am lib.AuthenticationMiddleware,
+	wec lib.WebErrorConverter,
+	uploadMaxFileSize int64) lib.WebService {
 	return &service{
 		cm:                cm,
 		logger:            logger,
@@ -73,7 +73,7 @@ func (s *service) uploadEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	path := filepath.Clean("/" + req.Path)
 	if path == "/" {
-		logger.Warn().Log("msg", "can not upload to root")
+		logger.Warn().Log("msg", "can not upload to lib")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -101,17 +101,17 @@ func (s *service) handleUploadEndpointError(err error, w http.ResponseWriter, r 
 		return
 	}
 
-	if codeErr, ok := err.(root.Error); ok {
-		if codeErr.Code() == root.CodeNotFound {
+	if codeErr, ok := err.(lib.Error); ok {
+		if codeErr.Code() == lib.CodeNotFound {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		if codeErr.Code() == root.CodeBadChecksum {
+		if codeErr.Code() == lib.CodeBadChecksum {
 			logger.Error().Log("error", err, "msg", "file corruption on upload")
 			w.WriteHeader(http.StatusPreconditionFailed)
 			return
 		}
-		if codeErr.Code() == root.CodeUploadIsPartial {
+		if codeErr.Code() == lib.CodeUploadIsPartial {
 			w.WriteHeader(http.StatusPartialContent)
 			return
 		}
@@ -143,7 +143,7 @@ func (s *service) downloadEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	path := filepath.Clean("/" + req.Path)
 	if path == "/" {
-		logger.Warn().Log("msg", "can not download from root")
+		logger.Warn().Log("msg", "can not download from lib")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -168,13 +168,13 @@ func (s *service) downloadEndpoint(w http.ResponseWriter, r *http.Request) {
 
 func (s *service) handleDownloadEndpointError(err error, w http.ResponseWriter, r *http.Request) {
 	logger := s.cm.MustGetLog(r.Context())
-	if codeErr, ok := err.(root.Error); ok {
-		if codeErr.Code() == root.CodeNotFound {
+	if codeErr, ok := err.(lib.Error); ok {
+		if codeErr.Code() == lib.CodeNotFound {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
 		}
 
-		if codeErr.Code() == root.CodeBadInputData {
+		if codeErr.Code() == lib.CodeBadInputData {
 			jsonErr, err := s.wec.ErrorToJSON(codeErr)
 			if err != nil {
 				logger.Error().Log("error", err)
@@ -203,8 +203,8 @@ type badRequestError string
 func (e badRequestError) Error() string {
 	return string(e)
 }
-func (e badRequestError) Code() root.Code {
-	return root.Code(root.CodeBadInputData)
+func (e badRequestError) Code() lib.Code {
+	return lib.Code(lib.CodeBadInputData)
 }
 func (e badRequestError) Message() string {
 	return string(e)

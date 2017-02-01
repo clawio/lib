@@ -14,8 +14,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/clawio/clawiod/root"
-	"github.com/clawio/clawiod/root/ocfsmdatadriver"
+	"github.com/clawio/lib"
+	"github.com/clawio/lib/ocfsmdatadriver"
 	"github.com/go-kit/kit/log/levels"
 	"path/filepath"
 	"regexp"
@@ -29,12 +29,12 @@ type driver struct {
 	chunksFolder           string
 	checksum               string
 	verifyClientChecksum   bool
-	metaDataDriver         root.MetaDataDriver
+	metaDataDriver         lib.MetaDataDriver
 	ownCloudMetaDataDriver *ocfsmdatadriver.Driver
 }
 
 // New returns an implementation of DataDriver.
-func New(logger levels.Levels, dataFolder, temporaryFolder, chunksFolder, checksum string, verifyClientChecksum bool, metaDataDriver root.MetaDataDriver) (root.DataDriver, error) {
+func New(logger levels.Levels, dataFolder, temporaryFolder, chunksFolder, checksum string, verifyClientChecksum bool, metaDataDriver lib.MetaDataDriver) (lib.DataDriver, error) {
 	if err := os.MkdirAll(dataFolder, 755); err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func New(logger levels.Levels, dataFolder, temporaryFolder, chunksFolder, checks
 	}, nil
 }
 
-func (c *driver) Init(ctx context.Context, user root.User) error {
+func (c *driver) Init(ctx context.Context, user lib.User) error {
 	return nil
 }
 
@@ -85,7 +85,7 @@ func (c *driver) Init(ctx context.Context, user root.User) error {
 // 2) Optional: calculate the checksum of the file if server-checksum is enabled.
 // 3) Optional: if a client-checksum is provided, check if it matches with the server-checksum.
 // 4) Move the file from the temporary folder to user folder.
-func (c *driver) UploadFile(ctx context.Context, user root.User, path string, r io.ReadCloser, clientChecksum string) error {
+func (c *driver) UploadFile(ctx context.Context, user lib.User, path string, r io.ReadCloser, clientChecksum string) error {
 	defer r.Close()
 	// if the file is a chunk we handle it differently
 	isChunked, err := c.isChunkedUpload(path)
@@ -142,7 +142,7 @@ func (c *driver) UploadFile(ctx context.Context, user root.User, path string, r 
 	return nil
 }
 
-func (c *driver) DownloadFile(ctx context.Context, user root.User, path string) (io.ReadCloser, error) {
+func (c *driver) DownloadFile(ctx context.Context, user lib.User, path string) (io.ReadCloser, error) {
 	localPath := c.getLocalPath(user, path)
 	fd, err := os.Open(localPath)
 	if err != nil {
@@ -171,7 +171,7 @@ func (c *driver) DownloadFile(ctx context.Context, user root.User, path string) 
 	return fd, nil
 }
 
-func (c *driver) uploadChunk(ctx context.Context, user root.User, path string, r io.ReadCloser, clientChecksum string) error {
+func (c *driver) uploadChunk(ctx context.Context, user lib.User, path string, r io.ReadCloser, clientChecksum string) error {
 	chunkInfo, err := getChunkBLOBInfo(path)
 	if err != nil {
 		err := fmt.Errorf("error getting chunk info from path: %s", path)
@@ -380,7 +380,7 @@ func (c *driver) computeChecksum(fn string) (string, error) {
 	return checksumType + ":" + checksum, nil
 }
 
-func (c *driver) getLocalPath(user root.User, path string) string {
+func (c *driver) getLocalPath(user lib.User, path string) string {
 	path = strings.Trim(path, "/")
 	return fmt.Sprintf("/%s/%s/%s", c.dataFolder, user.Username(), path)
 }
@@ -462,8 +462,8 @@ type checksumError string
 func (e checksumError) Error() string {
 	return string(e)
 }
-func (e checksumError) Code() root.Code {
-	return root.Code(root.CodeBadChecksum)
+func (e checksumError) Code() lib.Code {
+	return lib.Code(lib.CodeBadChecksum)
 }
 func (e checksumError) Message() string {
 	return string(e)
@@ -474,8 +474,8 @@ type notFoundError string
 func (e notFoundError) Error() string {
 	return string(e)
 }
-func (e notFoundError) Code() root.Code {
-	return root.Code(root.CodeNotFound)
+func (e notFoundError) Code() lib.Code {
+	return lib.Code(lib.CodeNotFound)
 }
 func (e notFoundError) Message() string {
 	return string(e)
@@ -486,8 +486,8 @@ type isFolderError string
 func (e isFolderError) Error() string {
 	return string(e)
 }
-func (e isFolderError) Code() root.Code {
-	return root.Code(root.CodeBadInputData)
+func (e isFolderError) Code() lib.Code {
+	return lib.Code(lib.CodeBadInputData)
 }
 func (e isFolderError) Message() string {
 	return string(e)
@@ -498,8 +498,8 @@ type partialUploadError string
 func (e partialUploadError) Error() string {
 	return string(e)
 }
-func (e partialUploadError) Code() root.Code {
-	return root.Code(root.CodeUploadIsPartial)
+func (e partialUploadError) Code() lib.Code {
+	return lib.Code(lib.CodeUploadIsPartial)
 }
 func (e partialUploadError) Message() string {
 	return string(e)

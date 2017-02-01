@@ -2,7 +2,7 @@ package contextmanager
 
 import (
 	"context"
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"github.com/go-kit/kit/log/levels"
 )
 
@@ -24,20 +24,20 @@ const (
 	traceIDKey contextKey = iota
 )
 
-func New() root.ContextManager {
+func New() lib.ContextManager {
 	return &manager{}
 }
 
-func (m *manager) SetUser(ctx context.Context, user root.User) context.Context {
+func (m *manager) SetUser(ctx context.Context, user lib.User) context.Context {
 	return context.WithValue(ctx, userKey, user)
 }
 
-func (m *manager) MustGetUser(ctx context.Context) root.User {
-	return ctx.Value(userKey).(root.User)
+func (m *manager) MustGetUser(ctx context.Context) lib.User {
+	return ctx.Value(userKey).(lib.User)
 }
 
-func  (m *manager) GetUser(ctx context.Context) (root.User, bool) {
-	user, ok := ctx.Value(userKey).(root.User)
+func  (m *manager) GetUser(ctx context.Context) (lib.User, bool) {
+	user, ok := ctx.Value(userKey).(lib.User)
 	return user, ok
 }
 

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"context"
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"github.com/go-kit/kit/log/levels"
 	"github.com/go-sql-Driver/mysql"
 	"github.com/jinzhu/gorm"
@@ -72,7 +72,7 @@ type Driver struct {
 }
 
 // New returns an implementation of MetaDataDriver
-func New(logger levels.Levels, sqlLogger mysql.Logger, maxSQLIdleConnections, maxSQLConcurrentConnections int, dataFolder, temporaryFolder, dsn string) (root.MetaDataDriver, error) {
+func New(logger levels.Levels, sqlLogger mysql.Logger, maxSQLIdleConnections, maxSQLConcurrentConnections int, dataFolder, temporaryFolder, dsn string) (lib.MetaDataDriver, error) {
 	if sqlLogger == nil {
 		sqlLogger = &gorm.Logger{}
 	}
@@ -115,7 +115,7 @@ func New(logger levels.Levels, sqlLogger mysql.Logger, maxSQLIdleConnections, ma
 }
 
 // Init initializes the user home directory.
-func (c *Driver) Init(ctx context.Context, user root.User) error {
+func (c *Driver) Init(ctx context.Context, user lib.User) error {
 	localPath := c.getLocalPath(user, "/")
 	if err := os.MkdirAll(localPath, 0755); err != nil {
 		c.logger.Error().Log("error", err)
@@ -131,7 +131,7 @@ func (c *Driver) Init(ctx context.Context, user root.User) error {
 }
 
 // CreateTree creates a new tree.
-func (c *Driver) CreateFolder(ctx context.Context, user root.User, path string) error {
+func (c *Driver) CreateFolder(ctx context.Context, user lib.User, path string) error {
 	localPath := c.getLocalPath(user, path)
 	if err := os.Mkdir(localPath, 0755); err != nil {
 		c.logger.Error().Log("error", err)
@@ -141,7 +141,7 @@ func (c *Driver) CreateFolder(ctx context.Context, user root.User, path string) 
 }
 
 // ExamineObject returns the metadata associated with the object.
-func (c *Driver) Examine(ctx context.Context, user root.User, path string) (root.FileInfo, error) {
+func (c *Driver) Examine(ctx context.Context, user lib.User, path string) (lib.FileInfo, error) {
 	localPath := c.getLocalPath(user, path)
 	osFileInfo, err := os.Stat(localPath)
 	if err != nil {
@@ -161,7 +161,7 @@ func (c *Driver) Examine(ctx context.Context, user root.User, path string) (root
 	return fileInfo, nil
 }
 
-func (c *Driver) ListFolder(ctx context.Context, user root.User, path string) ([]root.FileInfo, error) {
+func (c *Driver) ListFolder(ctx context.Context, user lib.User, path string) ([]lib.FileInfo, error) {
 	localPath := c.getLocalPath(user, path)
 	osFileInfo, err := os.Stat(localPath)
 	if err != nil {
@@ -185,7 +185,7 @@ func (c *Driver) ListFolder(ctx context.Context, user root.User, path string) ([
 	if err != nil {
 		return nil, err
 	}
-	var fileInfos []root.FileInfo
+	var fileInfos []lib.FileInfo
 	for _, fi := range osFileInfos {
 		p := filepath.Join(path, filepath.Base(fi.Name()))
 		rec, err := c.GetDBMetaData(c.GetVirtualPath(user, p), true, c.GetVirtualPath(user, "/"))
@@ -198,7 +198,7 @@ func (c *Driver) ListFolder(ctx context.Context, user root.User, path string) ([
 }
 
 // DeleteObject deletes an object.
-func (c *Driver) Delete(ctx context.Context, user root.User, path string) error {
+func (c *Driver) Delete(ctx context.Context, user lib.User, path string) error {
 	localPath := c.getLocalPath(user, path)
 	err := os.RemoveAll(localPath)
 	if err != nil {
@@ -209,7 +209,7 @@ func (c *Driver) Delete(ctx context.Context, user root.User, path string) error 
 }
 
 // Move moves an object from source to target.
-func (c *Driver) Move(ctx context.Context, user root.User, sourcePath, targetPath string) error {
+func (c *Driver) Move(ctx context.Context, user lib.User, sourcePath, targetPath string) error {
 	sourceLocalPath := c.getLocalPath(user, sourcePath)
 	targetLocalPath := c.getLocalPath(user, targetPath)
 	err := os.Rename(sourceLocalPath, targetLocalPath)
@@ -227,18 +227,18 @@ func (c *Driver) Move(ctx context.Context, user root.User, sourcePath, targetPat
 	return c.MoveDBMetaData(sourceVirtualPath, targetVirtualPath, c.GetVirtualPath(user, "/"))
 }
 
-func (c *Driver) getLocalPath(user root.User, path string) string {
+func (c *Driver) getLocalPath(user lib.User, path string) string {
 	homeDir := secureJoin("/", user.Username())
 	userPath := secureJoin(homeDir, path)
 	return secureJoin(c.dataFolder, userPath)
 }
 
 // GetVirtualPath returns the virtual path inside the database for this user and path.
-func (c *Driver) GetVirtualPath(user root.User, path string) string {
+func (c *Driver) GetVirtualPath(user lib.User, path string) string {
 	homeDir := secureJoin("/", string(user.Username()[0]), user.Username())
 	return secureJoin(homeDir, path)
 }
-func (c *Driver) getObjectInfo(path string, osFileInfo os.FileInfo, rec *record) root.FileInfo {
+func (c *Driver) getObjectInfo(path string, osFileInfo os.FileInfo, rec *record) lib.FileInfo {
 	return &fileInfo{path: path, osFileInfo: osFileInfo, checksum: rec.Checksum, etag: rec.ETag, id: rec.ID, mtime: rec.ModTime}
 }
 
@@ -285,7 +285,7 @@ func (c *Driver) GetDBMetaData(virtualPath string, forceCreateOnMiss bool, ances
 	return r, nil
 }
 
-func (c *Driver) PropagateChanges(user root.User, from, to, checksum string) error {
+func (c *Driver) PropagateChanges(user lib.User, from, to, checksum string) error {
 	vp := c.GetVirtualPath(user, from)
 	ancestor := c.GetVirtualPath(user, to)
 	return c.SetDBMetaData(vp, checksum, ancestor)
@@ -542,8 +542,8 @@ func (e checksumError) Error() string {
 	return string(e)
 }
 
-func (e checksumError) Code() root.Code {
-	return root.Code(root.CodeBadChecksum)
+func (e checksumError) Code() lib.Code {
+	return lib.Code(lib.CodeBadChecksum)
 }
 func (e checksumError) Message() string {
 	return string(e)
@@ -554,8 +554,8 @@ type notFoundError string
 func (e notFoundError) Error() string {
 	return string(e)
 }
-func (e notFoundError) Code() root.Code {
-	return root.Code(root.CodeNotFound)
+func (e notFoundError) Code() lib.Code {
+	return lib.Code(lib.CodeNotFound)
 }
 func (e notFoundError) Message() string {
 	return string(e)
@@ -566,8 +566,8 @@ type isFolderError string
 func (e isFolderError) Error() string {
 	return string(e)
 }
-func (e isFolderError) Code() root.Code {
-	return root.Code(root.CodeBadInputData)
+func (e isFolderError) Code() lib.Code {
+	return lib.Code(lib.CodeBadInputData)
 }
 func (e isFolderError) Message() string {
 	return string(e)
@@ -578,8 +578,8 @@ type renameError string
 func (e renameError) Error() string {
 	return string(e)
 }
-func (e renameError) Code() root.Code {
-	return root.Code(root.CodeBadInputData)
+func (e renameError) Code() lib.Code {
+	return lib.Code(lib.CodeBadInputData)
 }
 func (e renameError) Message() string {
 	return string(e)

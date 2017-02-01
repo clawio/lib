@@ -3,7 +3,7 @@ package loggermiddleware
 import (
 	"errors"
 	"fmt"
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"github.com/go-kit/kit/log/levels"
 	"github.com/satori/go.uuid"
 	"net/http"
@@ -12,11 +12,11 @@ import (
 )
 
 type middleware struct {
-	cm     root.ContextManager
+	cm     lib.ContextManager
 	logger levels.Levels
 }
 
-func New(cm root.ContextManager, logger levels.Levels) root.AuthenticationMiddleware {
+func New(cm lib.ContextManager, logger levels.Levels) lib.AuthenticationMiddleware {
 	return &middleware{cm: cm, logger: logger}
 }
 

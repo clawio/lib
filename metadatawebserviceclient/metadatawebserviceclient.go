@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"github.com/go-kit/kit/log/levels"
 	"github.com/patrickmn/go-cache"
 	"io/ioutil"
@@ -16,23 +16,23 @@ import (
 
 type webServiceClient struct {
 	logger         levels.Levels
-	cm             root.ContextManager
+	cm             lib.ContextManager
 	client         *http.Client
-	registryDriver root.RegistryDriver
+	registryDriver lib.RegistryDriver
 	cache          *cache.Cache
 }
 
-func New(logger levels.Levels, cm root.ContextManager, registryDriver root.RegistryDriver) root.MetaDataWebServiceClient {
+func New(logger levels.Levels, cm lib.ContextManager, registryDriver lib.RegistryDriver) lib.MetaDataWebServiceClient {
 	cache := cache.New(time.Second*10, time.Second*10)
 	return &webServiceClient{logger: logger, cm: cm, registryDriver: registryDriver, client: http.DefaultClient, cache: cache}
 }
 
 func (c *webServiceClient) getMetaDataURL(ctx context.Context) (string, error) {
-	var nodes []root.RegistryNode
+	var nodes []lib.RegistryNode
 
 	v, ok := c.cache.Get("nodes")
 	if ok {
-		nodes = v.([]root.RegistryNode)
+		nodes = v.([]lib.RegistryNode)
 		c.logger.Info().Log("msg", "nodes obtained from cache")
 	} else {
 		ns, err := c.registryDriver.GetNodesForRol(ctx, "metadata-node")
@@ -54,7 +54,7 @@ func (c *webServiceClient) getMetaDataURL(ctx context.Context) (string, error) {
 	return chosenURL, nil
 }
 
-func (c *webServiceClient) Examine(ctx context.Context, user root.User, path string) (root.FileInfo, error) {
+func (c *webServiceClient) Examine(ctx context.Context, user lib.User, path string) (lib.FileInfo, error) {
 	traceID := c.cm.MustGetTraceID(ctx)
 	token := c.cm.MustGetAccessToken(ctx)
 
@@ -106,7 +106,7 @@ func (c *webServiceClient) Examine(ctx context.Context, user root.User, path str
 
 }
 
-func (c *webServiceClient) ListFolder(ctx context.Context, user root.User, path string) ([]root.FileInfo, error) {
+func (c *webServiceClient) ListFolder(ctx context.Context, user lib.User, path string) ([]lib.FileInfo, error) {
 	traceID := c.cm.MustGetTraceID(ctx)
 	token := c.cm.MustGetAccessToken(ctx)
 
@@ -149,7 +149,7 @@ func (c *webServiceClient) ListFolder(ctx context.Context, user root.User, path 
 			c.logger.Error().Log("error", err)
 			return nil, err
 		}
-		fileInfos := []root.FileInfo{}
+		fileInfos := []lib.FileInfo{}
 		for _, fi := range finfos {
 			fileInfos = append(fileInfos, fi)
 		}
@@ -164,7 +164,7 @@ func (c *webServiceClient) ListFolder(ctx context.Context, user root.User, path 
 	return nil, internalError(fmt.Sprintf("error listing on remote"))
 }
 
-func (c *webServiceClient) Delete(ctx context.Context, user root.User, path string) error {
+func (c *webServiceClient) Delete(ctx context.Context, user lib.User, path string) error {
 	traceID := c.cm.MustGetTraceID(ctx)
 	token := c.cm.MustGetAccessToken(ctx)
 
@@ -206,7 +206,7 @@ func (c *webServiceClient) Delete(ctx context.Context, user root.User, path stri
 	return internalError(fmt.Sprintf("error deleting on remote"))
 }
 
-func (c *webServiceClient) Move(ctx context.Context, user root.User, sourcePath, targetPath string) error {
+func (c *webServiceClient) Move(ctx context.Context, user lib.User, sourcePath, targetPath string) error {
 	traceID := c.cm.MustGetTraceID(ctx)
 	token := c.cm.MustGetAccessToken(ctx)
 
@@ -247,7 +247,7 @@ func (c *webServiceClient) Move(ctx context.Context, user root.User, sourcePath,
 	return internalError(fmt.Sprintf("error moving on remote"))
 }
 
-func (c *webServiceClient) CreateFolder(ctx context.Context, user root.User, path string) error {
+func (c *webServiceClient) CreateFolder(ctx context.Context, user lib.User, path string) error {
 	traceID := c.cm.MustGetTraceID(ctx)
 	token := c.cm.MustGetAccessToken(ctx)
 
@@ -326,8 +326,8 @@ type internalError string
 func (e internalError) Error() string {
 	return string(e)
 }
-func (e internalError) Code() root.Code {
-	return root.Code(root.CodeNotFound)
+func (e internalError) Code() lib.Code {
+	return lib.Code(lib.CodeNotFound)
 }
 func (e internalError) Message() string {
 	return string(e)
@@ -338,8 +338,8 @@ type notFoundError string
 func (e notFoundError) Error() string {
 	return string(e)
 }
-func (e notFoundError) Code() root.Code {
-	return root.Code(root.CodeNotFound)
+func (e notFoundError) Code() lib.Code {
+	return lib.Code(lib.CodeNotFound)
 }
 func (e notFoundError) Message() string {
 	return string(e)

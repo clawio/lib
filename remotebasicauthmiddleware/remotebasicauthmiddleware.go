@@ -1,18 +1,18 @@
 package remotebasicauthmiddleware
 
 import (
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"net/http"
 )
 
 type middleware struct {
 	cookieName                     string
-	cm                             root.ContextManager
-	authenticationWebServiceClient root.AuthenticationWebServiceClient
-	tokenDriver                    root.TokenDriver
+	cm                             lib.ContextManager
+	authenticationWebServiceClient lib.AuthenticationWebServiceClient
+	tokenDriver                    lib.TokenDriver
 }
 
-func New(cm root.ContextManager, authenticationWebServiceClient root.AuthenticationWebServiceClient, tokenDriver root.TokenDriver, cookieName string) root.BasicAuthMiddleware {
+func New(cm lib.ContextManager, authenticationWebServiceClient lib.AuthenticationWebServiceClient, tokenDriver lib.TokenDriver, cookieName string) lib.BasicAuthMiddleware {
 	return &middleware{cm: cm, authenticationWebServiceClient: authenticationWebServiceClient, tokenDriver: tokenDriver, cookieName: cookieName}
 }
 

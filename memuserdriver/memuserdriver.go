@@ -2,11 +2,11 @@ package memuserdriver
 
 import (
 	"fmt"
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"strings"
 )
 
-func New(userList string) root.UserDriver {
+func New(userList string) lib.UserDriver {
 	users := []*user{}
 	userTokens := strings.Split(userList, ",")
 	for _, userToken := range userTokens {
@@ -23,7 +23,7 @@ func New(userList string) root.UserDriver {
 	return &driver{users: users}
 }
 
-func (c *driver) GetByCredentials(username, password string) (root.User, error) {
+func (c *driver) GetByCredentials(username, password string) (lib.User, error) {
 	for _, u := range c.users {
 		if u.username == username && u.password == password {
 			return u, nil
@@ -64,8 +64,8 @@ type userNotFoundError string
 func (e userNotFoundError) Error() string {
 	return string(e)
 }
-func (e userNotFoundError) Code() root.Code {
-	return root.Code(root.CodeUserNotFound)
+func (e userNotFoundError) Code() lib.Code {
+	return lib.Code(lib.CodeUserNotFound)
 }
 func (e userNotFoundError) Message() string {
 	return string(e)

@@ -14,7 +14,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/clawio/clawiod/root"
+	"github.com/clawio/lib"
 	"github.com/go-kit/kit/log/levels"
 )
 
@@ -27,7 +27,7 @@ type driver struct {
 }
 
 // New returns an implementation of DataDriver.
-func New(logger levels.Levels, dataFolder, temporaryFolder, checksum string, verifyClientChecksum bool) (root.DataDriver, error) {
+func New(logger levels.Levels, dataFolder, temporaryFolder, checksum string, verifyClientChecksum bool) (lib.DataDriver, error) {
 	if err := os.MkdirAll(dataFolder, 755); err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func New(logger levels.Levels, dataFolder, temporaryFolder, checksum string, ver
 	}, nil
 }
 
-func (c *driver) Init(ctx context.Context, user root.User) error {
+func (c *driver) Init(ctx context.Context, user lib.User) error {
 	return nil
 }
 
@@ -53,7 +53,7 @@ func (c *driver) Init(ctx context.Context, user root.User) error {
 // 2) Optional: calculate the checksum of the file if server-checksum is enabled.
 // 3) Optional: if a client-checksum is provided, check if it matches with the server-checksum.
 // 4) Move the file from the temporary folder to user folder.
-func (c *driver) UploadFile(ctx context.Context, user root.User, path string, r io.ReadCloser, clientChecksum string) error {
+func (c *driver) UploadFile(ctx context.Context, user lib.User, path string, r io.ReadCloser, clientChecksum string) error {
 	tempFileName, err := c.saveToTempFile(r)
 	if err != nil {
 		c.logger.Error().Log("error", err)
@@ -94,7 +94,7 @@ func (c *driver) UploadFile(ctx context.Context, user root.User, path string, r 
 	return nil
 }
 
-func (c *driver) DownloadFile(ctx context.Context, user root.User, path string) (io.ReadCloser, error) {
+func (c *driver) DownloadFile(ctx context.Context, user lib.User, path string) (io.ReadCloser, error) {
 	localPath := c.getLocalPath(user, path)
 	fd, err := os.Open(localPath)
 	if err != nil {
@@ -167,7 +167,7 @@ func (c *driver) computeChecksum(fn string) (string, error) {
 	return checksumType + ":" + checksum, nil
 }
 
-func (c *driver) getLocalPath(user root.User, path string) string {
+func (c *driver) getLocalPath(user lib.User, path string) string {
 	path = strings.Trim(path, "/")
 	return fmt.Sprintf("/%s/%s/%s", c.dataFolder, user.Username(), path)
 }
@@ -177,8 +177,8 @@ type checksumError string
 func (e checksumError) Error() string {
 	return string(e)
 }
-func (e checksumError) Code() root.Code {
-	return root.Code(root.CodeBadChecksum)
+func (e checksumError) Code() lib.Code {
+	return lib.Code(lib.CodeBadChecksum)
 }
 func (e checksumError) Message() string {
 	return string(e)
@@ -189,8 +189,8 @@ type notFoundError string
 func (e notFoundError) Error() string {
 	return string(e)
 }
-func (e notFoundError) Code() root.Code {
-	return root.Code(root.CodeNotFound)
+func (e notFoundError) Code() lib.Code {
+	return lib.Code(lib.CodeNotFound)
 }
 func (e notFoundError) Message() string {
 	return string(e)
@@ -201,8 +201,8 @@ type isFolderError string
 func (e isFolderError) Error() string {
 	return string(e)
 }
-func (e isFolderError) Code() root.Code {
-	return root.Code(root.CodeBadInputData)
+func (e isFolderError) Code() lib.Code {
+	return lib.Code(lib.CodeBadInputData)
 }
 func (e isFolderError) Message() string {
 	return string(e)
